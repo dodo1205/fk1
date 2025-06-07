@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FKStream - Configuration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff5722;
+            --secondary-color: #f2f2f2;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #f5f5f5;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --border-radius: 8px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://i.imgur.com/HOR15Iu.png');
+            background-position: center;
+            background-size: cover;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        
+        .logo {
+            max-width: 120px;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid #444;
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background-color: #e64a19;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .url-box {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .copy-button {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: transparent;
+            color: var(--text-color);
+            font-size: 20px;
+            padding: 5px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        
+        .copy-button:hover {
+            opacity: 1;
+            background-color: transparent;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .alert-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .alert-error {
+            background-color: var(--error-color);
+            color: white;
+        }
+        
+        .installation-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            background-color: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            display: none;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+            color: var(--primary-color);
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .divider {
+            margin: 30px 0;
+            border-top: 1px solid #333;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .installation-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Animation pour le message de copie */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .copy-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .copy-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease forwards, fadeOut 0.3s ease 1.5s forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://i.imgur.com/HOR15Iu.png" alt="FKStream Logo" class="logo">
+        <h1>FKStream</h1>
+        <p>Addon Stremio pour les animes Kai sans fillers</p>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-cog"></i> Configuration de l'addon</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Choisissez vos paramètres de debridage ci-dessous :</p>
+                </div>
+            </div>
+            
+            <form id="addon-form">
+                <div class="form-group">
+                    <label for="service">
+                        Service de debridage
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Les services de debridage vous permettent de streamer des torrents sans avoir à les télécharger.</span>
+                        </span>
+                    </label>
+                    <select id="service" name="service">
+                        <option value="none">Aucun (torrents directs uniquement)</option>
+                        <option value="realdebrid">Real-Debrid</option>
+                        <option value="alldebrid">AllDebrid</option>
+                        <option value="torbox">Torbox</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="api-key-group" style="display: none;">
+                    <label for="api-key">
+                        Clé API
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Vous pouvez trouver votre clé API dans les paramètres de votre compte sur le site du service de debridage.</span>
+                        </span>
+                    </label>
+                    <input type="text" id="api-key" name="apiKey" placeholder="Entrez votre clé API">
+                </div>
+                
+                <div class="form-group">
+                    <label for="download-option">
+                        Option de téléchargement
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Choisissez quels types de liens vous voulez voir apparaître dans Stremio.</span>
+                        </span>
+                    </label>
+                    <select id="download-option" name="downloadOption">
+                        <option value="all">Tous les liens (torrents + débridés)</option>
+                        <option value="cached">Liens débridés uniquement</option>
+                        <option value="download">Torrents directs uniquement</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prepare-next-episode">
+                        Préparer l’épisode suivant
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tooltip-text">Activez cette option pour préparer automatiquement l’épisode suivant lorsque vous regardez un épisode.</span>
+                        </span>
+                    </label>
+                    <select id="prepare-next-episode" name="prepareNextEpisode">
+                        <option value="false">Désactivé</option>
+                        <option value="true">Activé</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" id="generate-button">
+                        <span class="loader" id="generate-loader"></span>
+                        <i class="fas fa-magic"></i> Générer l'addon
+                    </button>
+                </div>
+                
+                <div class="alert alert-success" id="success-message">
+                    <i class="fas fa-check-circle"></i> Configuration générée avec succès !
+                </div>
+                
+                <div class="alert alert-error" id="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <span id="error-text">Erreur lors de la génération de la configuration.</span>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card hidden" id="installation-card">
+            <h2><i class="fas fa-download"></i> Installation dans Stremio</h2>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Utilisez l'une des méthodes ci-dessous pour installer l'addon dans Stremio :</p>
+                </div>
+            </div>
+            
+            <div id="url-container">
+                <label>Lien d'installation :</label>
+                <div class="url-box">
+                    <span id="install-url"></span>
+                    <button class="copy-button" id="copy-button" title="Copier">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="installation-actions">
+                <button id="install-button">
+                    <i class="fas fa-external-link-alt"></i> Installer dans Stremio
+                </button>
+                
+                <button id="copy-url-button">
+                    <i class="fas fa-copy"></i> Copier le lien
+                </button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2><i class="fas fa-info-circle"></i> À propos</h2>
+            <p>FKStream est un addon non officiel pour Stremio qui permet de regarder les animes Kai de Fankai directement depuis Stremio.</p>
+            <p>Les animes Kai sont des versions remontées qui suppriment les fillers, restant ainsi plus fidèles au manga original.</p>
+            
+            <div class="divider"></div>
+            
+            <p><strong>Caractéristiques :</strong></p>
+            <ul>
+                <li>Accès à des versions Kai d'animes populaires</li>
+                <li>Support des versions VOSTFR et VF (selon disponibilité)</li>
+                <li>Streaming direct via services de debridage</li>
+                <li>Interface facile à utiliser</li>
+            </ul>
+            
+            <div class="divider"></div>
+            
+            <p><small>Cet addon n'est pas affilié à Fan-Kai ou à Stremio. Pour plus d'informations sur Fan-Kai, visitez <a href="https://fankai.fr" target="_blank">fankai.fr</a>.</small></p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>FKStream - Addon Fankai pour Stremio</p>
+        <p>Développé avec ❤️ pour la communauté Fankai</p>
+    </div>
+    
+    <div class="copy-message" id="copy-message">
+        <i class="fas fa-check"></i> Lien copié !
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Éléments DOM
+            const serviceSelect = document.getElementById('service');
+            const apiKeyGroup = document.getElementById('api-key-group');
+            const apiKeyInput = document.getElementById('api-key');
+            const downloadOptionSelect = document.getElementById('download-option');
+            const addonForm = document.getElementById('addon-form');
+            const generateButton = document.getElementById('generate-button');
+            const generateLoader = document.getElementById('generate-loader');
+            const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            const installationCard = document.getElementById('installation-card');
+            const installUrl = document.getElementById('install-url');
+            const installButton = document.getElementById('install-button');
+            const copyUrlButton = document.getElementById('copy-url-button');
+            const copyButton = document.getElementById('copy-button');
+            const copyMessage = document.getElementById('copy-message');
+            const prepareNextEpisodeSelect = document.getElementById('prepare-next-episode');
+            
+            // Charger la configuration sauvegardée (si elle existe)
+            loadSavedConfig();
+            
+            // Écouteur pour afficher/masquer le champ de clé API
+            serviceSelect.addEventListener('change', function() {
+                if (this.value === 'none') {
+                    apiKeyGroup.style.display = 'none';
+                    apiKeyInput.value = '';
+                } else {
+                    apiKeyGroup.style.display = 'block';
+                }
+                saveConfig();
+            });
+            
+            // Écouteur pour les changements dans les options de téléchargement
+            downloadOptionSelect.addEventListener('change', saveConfig);
+            prepareNextEpisodeSelect.addEventListener('change', saveConfig);
+            
+            // Écouteur pour le champ de clé API
+            apiKeyInput.addEventListener('input', saveConfig);
+            
+            // Écouteur pour la soumission du formulaire
+            addonForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                generateAddon();
+            });
+            
+            // Écouteur pour le bouton d'installation
+            installButton.addEventListener('click', function() {
+                window.open(installUrl.textContent, '_blank');
+            });
+            
+            // Écouteur pour le bouton de copie d'URL
+            copyUrlButton.addEventListener('click', function() {
+                copyToClipboard(installUrl.textContent);
+                showCopyMessage();
+            });
+            
+            // Écouteur pour le bouton de copie dans la boîte d'URL
+            copyButton.addEventListener('click', function() {
+                copyToClipboard(installUrl.textContent);
+                showCopyMessage();
+            });
+            
+            // Fonction pour copier du texte dans le presse-papiers
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).catch(err => {
+                    console.error('Erreur lors de la copie : ', err);
+                });
+            }
+            
+            // Fonction pour afficher le message de copie
+            function showCopyMessage() {
+                copyMessage.classList.add('show');
+                setTimeout(() => {
+                    copyMessage.classList.remove('show');
+                }, 2000);
+            }
+            
+            // Fonction pour sauvegarder la configuration
+            function saveConfig() {
+                const config = {
+                    service: serviceSelect.value,
+                    apiKey: apiKeyInput.value,
+                    downloadOption: downloadOptionSelect.value,
+                    prepareNextEpisode: prepareNextEpisodeSelect.value
+                };
+                localStorage.setItem('fkstreamConfig', JSON.stringify(config));
+            }
+            
+            // Fonction pour charger la configuration sauvegardée
+            function loadSavedConfig() {
+                const savedConfig = localStorage.getItem('fkstreamConfig');
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    serviceSelect.value = config.service || 'none';
+                    apiKeyInput.value = config.apiKey || '';
+                    downloadOptionSelect.value = config.downloadOption || 'all';
+                    prepareNextEpisodeSelect.value = config.prepareNextEpisode || 'false';
+                    
+                    if (config.service !== 'none') {
+                        apiKeyGroup.style.display = 'block';
+                    }
+                }
+            }
+            
+            // Fonction pour générer l'addon
+            function generateAddon() {
+                generateLoader.style.display = 'inline-block';
+                generateButton.disabled = true;
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+                
+                const config = {
+                    service: serviceSelect.value,
+                    apiKey: apiKeyInput.value,
+                    downloadOption: downloadOptionSelect.value,
+                    prepareNextEpisode: prepareNextEpisodeSelect.value === 'true'
+                };
+                
+                // Envoyer la configuration au serveur
+                fetch('/api/encode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    generateLoader.style.display = 'none';
+                    generateButton.disabled = false;
+                    
+                    if (data.success) {
+                        successMessage.style.display = 'block';
+                        installationCard.classList.remove('hidden');
+                        
+                        // Construire l'URL d'installation avec l'ID unique
+                        const baseUrl = window.location.origin;
+                        const addonUrl = `${baseUrl}/c/${data.uniqueId}/manifest.json`;
+                        installUrl.textContent = addonUrl;
+                    } else {
+                        errorText.textContent = data.error || 'Erreur inconnue lors de la génération de la configuration.';
+                        errorMessage.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    generateLoader.style.display = 'none';
+                    generateButton.disabled = false;
+                    errorText.textContent = 'Erreur de connexion au serveur : ' + error.message;
+                    errorMessage.style.display = 'block';
+                    console.error('Erreur lors de la génération de l\'addon :', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
