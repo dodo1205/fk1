@@ -1,5 +1,5 @@
 {
-  "name": "fkstream-fankai-addon",
+  "name": "fkstream",
   "version": "1.0.0",
   "description": "Addon Stremio pour regarder les animes Kai de Fankai",
   "main": "index.js",
