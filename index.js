@@ -90,7 +90,7 @@ app.post('/api/encode', (req, res) => {
             return res.status(400).json({ success: false, error: 'Configuration invalide' });
         }
         const safeConfig = {
-            service: ['none', 'realdebrid', 'alldebrid', 'torbox'].includes(config.service) ? config.service : 'none',
+            service: ['none', 'realdebrid', 'alldebrid', 'torbox', 'premiumize', 'debridlink', 'offcloud'].includes(config.service) ? config.service : 'none',
             apiKey: config.apiKey || '',
             downloadOption: ['all', 'cached', 'download'].includes(config.downloadOption) ? config.downloadOption : 'all',
             prepareNextEpisode: config.prepareNextEpisode === true || config.prepareNextEpisode === 'true'
