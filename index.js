@@ -11,7 +11,7 @@ const path = require('path');
 const cors = require('cors');
 const { networkInterfaces } = require('os');
 const crypto = require('crypto');
-const { encodeBase64UrlSafe, decodeBase64UrlSafe } = require('./lib/stringUtils');
+const { encodeBase64UrlSafe, decodeBase64UrlSafe } = require('./lib/utils/stringUtils');
 
 // Création de l'application Express
 const app = express();
