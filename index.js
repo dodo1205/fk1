@@ -269,57 +269,47 @@ app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
 
     const { action, magnet: magnetLink, episode: episodeNumber, episodeName } = queryData;
 
-    console.log(`[PLAYBACK] Decoded Query Data:`, queryData);
-    // The 'action' property in queryData might be deprecated with the new resolveStream logic.
-    // We primarily need queryData.service, queryData.magnet, and episode/season info.
+    console.log(`[PLAYBACK] Decoded Action: ${action}, Magnet: ${magnetLink ? magnetLink.substring(0, 50) + '...' : 'N/A'}, Episode: ${episodeNumber}, EpisodeName: ${episodeName}`);
 
     try {
-        // Import the new resolveStream function from the updated lib/debrid/index.js
-        const { resolveStream } = require('./lib/debrid/index');
-        const introVideoUrl = 'https://cdn4.videas.fr/1503a1ff14ee4357869d8d8ab2634ea4/no-cache-mp4-source.mp4'; // Placeholder for "caching in progress"
+        const { initiateDebridDownload, debridTorrent } = require('./lib/debrid/index');
+        const introVideoUrl = 'https://cdn4.videas.fr/1503a1ff14ee4357869d8d8ab2634ea4/no-cache-mp4-source.mp4';
 
-        // The userConfig for the service is the 'config' object we retrieved for the uniqueId.
-        // It should contain { service: 'alldebrid', apiKey: '...', ... }
-        // queryData should also contain a 'service' field indicating which debrid to use for this specific stream.
-        // This 'service' in queryData is determined by addon.js when creating the stream link.
-        
-        const serviceNameToUse = queryData.service; // e.g., 'alldebrid', 'realdebrid'
-        if (!serviceNameToUse || serviceNameToUse === 'none') {
-            console.error('[PLAYBACK] Debrid service not specified in queryData or is "none".');
-            return res.status(400).send('Debrid service not specified in query.');
-        }
-        
-        // Pass the entire user's config for that uniqueId, which includes the apiKey for the selected service.
-        // resolveStream will internally pick the correct apiKey based on serviceNameToUse if userConfig has multiple.
-        // For now, userConfig (which is 'config' here) is specific to one service chosen at /api/encode.
-        const userDebridConfig = {
-            service: config.service, // This is the service selected at /configure time
-            apiKey: config.apiKey,
-            // Potentially add other global settings from 'config' if services need them
-        };
-
-        // Ensure queryData.service (the service chosen for *this specific stream*) is used to pick the debrid handler.
-        // The userDebridConfig.apiKey should be the one for queryData.service.
-        // This assumes that the 'config' object (userDebridConfig) is already specific to the 'queryData.service'.
-        // This is true because 'config' is set when the user creates their unique addon link.
-        // If queryData.service could differ from config.service, we'd need a more complex config structure.
-        // For now, we assume config.service IS the serviceNameToUse.
-
-        console.log(`[PLAYBACK] Attempting to resolve stream via ${serviceNameToUse} for magnet: ${queryData.magnet ? queryData.magnet.substring(0, 50) + '...' : 'N/A'}`);
-        
-        const streamUrl = await resolveStream(queryData, userDebridConfig);
-
-        if (streamUrl) {
-            console.log(`[PLAYBACK] Redirecting to resolved stream: ${streamUrl}`);
-            return res.redirect(302, streamUrl);
-        } else {
-            // This means the stream is not ready (being cached) or an error occurred.
-            console.log(`[PLAYBACK] Stream not ready or error for ${serviceNameToUse}. Redirecting to intro video: ${introVideoUrl}`);
+        if (action === 'download') {
+            console.log(`[PLAYBACK - DOWNLOAD] Initiating download for: ${magnetLink.substring(0, 50)}...`);
+            if (config.service === 'none' || !config.apiKey) {
+                 console.error('[PLAYBACK - DOWNLOAD] Debrid service not configured');
+                 return res.redirect(302, introVideoUrl);
+            }
+            initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
+                .then(() => console.log(`[PLAYBACK - DOWNLOAD] Background download initiated for ${magnetLink.substring(0, 50)}...`))
+                .catch(err => console.error(`[PLAYBACK - DOWNLOAD] Background download initiation failed: ${err.message}`));
+            console.log(`[PLAYBACK - DOWNLOAD] Redirecting to intro video: ${introVideoUrl}`);
             return res.redirect(302, introVideoUrl);
-        }
 
+        } else if (action === 'play') {
+            console.log(`[PLAYBACK - PLAY] Resolving stream link for: ${magnetLink.substring(0, 50)}...`);
+            if (config.service === 'none' || !config.apiKey) {
+                 console.error('[PLAYBACK - PLAY] Debrid service not configured for playback');
+                 return res.status(400).send('Debrid service not configured for playback');
+            }
+            const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
+            if (debridResult && debridResult.streamUrl) {
+                console.log(`[PLAYBACK - PLAY] Redirecting to resolved stream: ${debridResult.streamUrl}`);
+                return res.redirect(302, debridResult.streamUrl);
+            } else {
+                console.log(`[PLAYBACK - PLAY] Stream not ready or found. Initiating download and redirecting to intro video.`);
+                 initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
+                    .then(() => console.log(`[PLAYBACK - PLAY] Background download initiated (stream not ready) for ${magnetLink.substring(0, 50)}...`))
+                    .catch(err => console.error(`[PLAYBACK - PLAY] Background download initiation failed (stream not ready): ${err.message}`));
+                return res.redirect(302, introVideoUrl);
+            }
+        } else {
+            console.error(`[PLAYBACK] Invalid action: ${action}`);
+            return res.status(400).send('Invalid action parameter');
+        }
     } catch (error) {
-        console.error(`[PLAYBACK] Error processing request: ${error.message}`, error.stack);
+        console.error(`[PLAYBACK] Error processing request: ${error.message}`);
         return res.status(500).send('Internal server error');
     }
 });
@@ -342,12 +332,11 @@ app.head('/c/:uniqueId/playback/:queryb64', async (req, res) => {
         return res.status(400).end();
     }
 
-    // 'action' might be deprecated here as well, primarily need magnet and service info.
-    // const { action, episode: episodeNumber, episodeName } = queryData; 
+    const { action, episode: episodeNumber, episodeName } = queryData;
 
     const headers = {
-        'Content-Type': 'video/mp4', // Standard content type for video streams
-        'Accept-Ranges': 'bytes',    // Indicate support for range requests
+        'Content-Type': 'video/mp4',
+        'Accept-Ranges': 'bytes',
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         'Pragma': 'no-cache',
         'Expires': '0',
@@ -356,35 +345,21 @@ app.head('/c/:uniqueId/playback/:queryb64', async (req, res) => {
     };
 
     try {
-        // Basic validation: if the config and query are okay, respond with 200.
-        // A more advanced HEAD handler could try to get the actual status from debrid
-        // or check a Redis cache (like StreamFusion does) to return 202 if caching.
-        // For now, a simple 200 OK is a safe default for HEAD if parameters are valid.
-        // Stremio uses HEAD to check if the URL is valid and get Content-Length if available.
-        // If debrid service is not configured, it's an issue for actual playback, but HEAD might still be "valid".
-        
-        const serviceNameToUse = queryData.service;
-        if (!serviceNameToUse || serviceNameToUse === 'none') {
-            if (queryData.magnet && queryData.magnet.startsWith('magnet:')) {
-                // If it's a direct magnet link and no debrid, Stremio might handle it.
-                // Or, if this endpoint is *only* for debrided links, this is an error.
-                // Assuming for now that if it reaches here with 'none', it's an issue for playback,
-                // but the URL itself can be considered "valid" for a HEAD request.
-                console.warn(`[PLAYBACK HEAD] Debrid service is 'none' for magnet: ${queryData.magnet.substring(0,50)}...`);
-            } else {
-                console.error('[PLAYBACK HEAD] Debrid service not specified in queryData or is "none".');
-                // For non-magnet links, if no service, it's likely an error.
-                // However, for HEAD, we might still return 200 if the path is structurally valid.
-                // Let's be stricter: if no service for a non-magnet, it's bad.
-                // But queryData.magnet should always be present based on previous check.
-            }
-        }
-        
-        // For now, always respond 200 OK if basic checks pass.
-        // Later, we can integrate with checkTorrentsAvailability or a Redis cache status.
-        console.log(`[PLAYBACK HEAD] Responding 200 OK for query:`, queryData);
-        return res.status(200).set(headers).end();
+        if (action === 'download' || action === 'play') {
+             if (config.service === 'none' || !config.apiKey) {
+                 if (action === 'play') {
+                    console.error('[PLAYBACK HEAD - PLAY] Debrid not configured');
+                    return res.status(400).end();
+                 }
+                 console.warn('[PLAYBACK HEAD - DOWNLOAD] Debrid not configured, but responding OK for HEAD');
+             }
+            console.log(`[PLAYBACK HEAD - ${action.toUpperCase()}] Responding 200 OK for Ep: ${episodeNumber} Name: ${episodeName}`);
+            return res.status(200).set(headers).end();
 
+        } else {
+            console.error(`[PLAYBACK HEAD] Invalid action: ${action}`);
+            return res.status(400).end();
+        }
     } catch (error) {
         console.error(`[PLAYBACK HEAD] Error processing request: ${error.message}`);
         return res.status(500).end();
