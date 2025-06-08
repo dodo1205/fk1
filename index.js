@@ -9,8 +9,6 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const { serveHTTP } = require('stremio-addon-sdk');
-const http = require('http');
 const { networkInterfaces } = require('os');
 const crypto = require('crypto');
 const { encodeBase64UrlSafe, decodeBase64UrlSafe } = require('./lib/stringUtils');
