@@ -26,8 +26,7 @@
     "node-fetch": "^2.6.1",
     "parse-torrent": "^9.1.5",
     "rss-parser": "^3.13.0",
-    "stremio-addon-sdk": "^1.6.10",
-    "wikijs": "^6.4.1"
+    "stremio-addon-sdk": "^1.6.10"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
