@@ -18,7 +18,6 @@
   "author": "FKStream",
   "license": "MIT",
   "dependencies": {
-    "all-debrid-api": "^1.0.2",
     "axios": "^1.9.0",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
@@ -26,11 +25,6 @@
     "form-data": "^4.0.0",
     "node-cache": "^5.1.2",
     "parse-torrent": "^9.1.5",
-    "premiumize-api": "^1.0.3",
-    "debrid-link-api": "^1.0.1",
-    "offcloud-api": "^1.0.2",
-    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#d1f7eaa8593b947edbfbc8a92a176448b48ef445",
-    "@torbox/torbox-api": "^1.0.9",
     "rss-parser": "^3.13.0",
     "stremio-addon-sdk": "^1.6.10"
   },

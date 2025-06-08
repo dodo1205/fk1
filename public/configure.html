@@ -378,9 +378,6 @@
                         <option value="realdebrid">Real-Debrid</option>
                         <option value="alldebrid">AllDebrid</option>
                         <option value="torbox">Torbox</option>
-                        <option value="premiumize">Premiumize</option>
-                        <option value="debridlink">Debrid-Link</option>
-                        <option value="offcloud">Offcloud</option>
                     </select>
                 </div>
                 
@@ -533,20 +530,6 @@
                     apiKeyInput.value = '';
                 } else {
                     apiKeyGroup.style.display = 'block';
-                }
-                // Mettre à jour le placeholder en fonction du service
-                if (this.value === 'realdebrid') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API Real-Debrid';
-                } else if (this.value === 'alldebrid') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API AllDebrid';
-                } else if (this.value === 'torbox') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API Torbox';
-                } else if (this.value === 'premiumize') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API Premiumize';
-                } else if (this.value === 'debridlink') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API Debrid-Link';
-                } else if (this.value === 'offcloud') {
-                    apiKeyInput.placeholder = 'Entrez votre clé API Offcloud';
                 }
                 saveConfig();
             });
