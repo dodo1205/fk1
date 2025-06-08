@@ -30,6 +30,7 @@
     "debrid-link-api": "^1.1.1",
     "offcloud-api": "^1.0.2",
     "real-debrid-api": "^1.0.0",
+    "@torbox/torbox-api": "^1.0.9",
     "rss-parser": "^3.13.0",
     "stremio-addon-sdk": "^1.6.10"
   },
