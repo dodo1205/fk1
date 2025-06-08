@@ -27,7 +27,7 @@
     "node-cache": "^5.1.2",
     "parse-torrent": "^9.1.5",
     "premiumize-api": "^1.0.3",
-    "debrid-link-api": "^1.1.1",
+    "debrid-link-api": "^1.0.1",
     "offcloud-api": "^1.0.2",
     "real-debrid-api": "^1.0.0",
     "@torbox/torbox-api": "^1.0.9",
