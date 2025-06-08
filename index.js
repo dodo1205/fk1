@@ -249,67 +249,58 @@ app.get('/c/:uniqueId/stream/:type/:id.json', (req, res) => {
     }
 });
 
-// Route pour gérer la lecture/téléchargement via le backend - MODIFIED ROUTE
+// Route pour gérer la lecture/téléchargement via le backend - NOUVELLE LOGIQUE PHASE 2
 app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
     const { uniqueId, queryb64 } = req.params;
 
-    console.log(`[PLAYBACK] Request for ID: ${uniqueId}, QueryB64: ${queryb64}`);
+    console.log(`[PHASE 2] Demande de lecture/téléchargement reçue. ID: ${uniqueId}`);
 
     const config = activeConfigs[uniqueId];
     if (!config) {
-        console.error('[PLAYBACK] Configuration not found for ID:', uniqueId);
+        console.error('[PHASE 2] Configuration non trouvée pour ID:', uniqueId);
         return res.status(404).send('Configuration not found');
     }
 
     const queryData = decodeQuery(queryb64);
-    if (!queryData || !queryData.action || !queryData.magnet) {
-        console.error('[PLAYBACK] Invalid or missing query data from queryb64:', queryData);
-        return res.status(400).send('Invalid or missing action/magnet in query');
+    if (!queryData || !queryData.magnet) {
+        console.error('[PHASE 2] Données de requête invalides ou manquantes:', queryData);
+        return res.status(400).send('Invalid or missing magnet in query');
     }
 
-    const { action, magnet: magnetLink, episode: episodeNumber, episodeName } = queryData;
+    const { magnet: magnetLink, episode: episodeNumber, episodeName } = queryData;
+    const action = queryData.action || 'play'; // 'play' ou 'download'
 
-    console.log(`[PLAYBACK] Decoded Action: ${action}, Magnet: ${magnetLink ? magnetLink.substring(0, 50) + '...' : 'N/A'}, Episode: ${episodeNumber}, EpisodeName: ${episodeName}`);
+    console.log(`[PHASE 2] Action: ${action}, Magnet: ${magnetLink.substring(0, 50)}..., Ep: ${episodeNumber}`);
+
+    if (config.service === 'none' || !config.apiKey) {
+        console.error('[PHASE 2] Service de débridage non configuré.');
+        // Rediriger vers une page d'erreur ou une vidéo explicative si nécessaire
+        return res.status(400).send('Debrid service not configured.');
+    }
 
     try {
-        const { initiateDebridDownload, debridTorrent } = require('./lib/debrid/index');
+        // La seule fonction dont nous avons besoin ici est debridTorrent (Phase 2)
+        const { debridTorrent } = require('./lib/debrid/index');
         const introVideoUrl = 'https://cdn4.videas.fr/1503a1ff14ee4357869d8d8ab2634ea4/no-cache-mp4-source.mp4';
 
-        if (action === 'download') {
-            console.log(`[PLAYBACK - DOWNLOAD] Initiating download for: ${magnetLink.substring(0, 50)}...`);
-            if (config.service === 'none' || !config.apiKey) {
-                 console.error('[PLAYBACK - DOWNLOAD] Debrid service not configured');
-                 return res.redirect(302, introVideoUrl);
-            }
-            initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
-                .then(() => console.log(`[PLAYBACK - DOWNLOAD] Background download initiated for ${magnetLink.substring(0, 50)}...`))
-                .catch(err => console.error(`[PLAYBACK - DOWNLOAD] Background download initiation failed: ${err.message}`));
-            console.log(`[PLAYBACK - DOWNLOAD] Redirecting to intro video: ${introVideoUrl}`);
-            return res.redirect(302, introVideoUrl);
+        // Que l'action soit 'play' (pour un lien cache) ou 'download' (pour un lien non-cache),
+        // le processus backend est le même : on lance le débridage.
+        console.log(`[PHASE 2] Lancement du processus de débridage pour ${config.service}...`);
+        const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
 
-        } else if (action === 'play') {
-            console.log(`[PLAYBACK - PLAY] Resolving stream link for: ${magnetLink.substring(0, 50)}...`);
-            if (config.service === 'none' || !config.apiKey) {
-                 console.error('[PLAYBACK - PLAY] Debrid service not configured for playback');
-                 return res.status(400).send('Debrid service not configured for playback');
-            }
-            const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
-            if (debridResult && debridResult.streamUrl) {
-                console.log(`[PLAYBACK - PLAY] Redirecting to resolved stream: ${debridResult.streamUrl}`);
-                return res.redirect(302, debridResult.streamUrl);
-            } else {
-                console.log(`[PLAYBACK - PLAY] Stream not ready or found. Initiating download and redirecting to intro video.`);
-                 initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
-                    .then(() => console.log(`[PLAYBACK - PLAY] Background download initiated (stream not ready) for ${magnetLink.substring(0, 50)}...`))
-                    .catch(err => console.error(`[PLAYBACK - PLAY] Background download initiation failed (stream not ready): ${err.message}`));
-                return res.redirect(302, introVideoUrl);
-            }
+        if (debridResult && debridResult.streamUrl) {
+            // Succès : le fichier était en cache ou a été téléchargé rapidement.
+            console.log(`[PHASE 2] Lien de streaming obtenu. Redirection vers: ${debridResult.streamUrl}`);
+            return res.redirect(302, debridResult.streamUrl);
         } else {
-            console.error(`[PLAYBACK] Invalid action: ${action}`);
-            return res.status(400).send('Invalid action parameter');
+            // Échec ou attente : le fichier n'est pas prêt (téléchargement en cours par le service de débridage).
+            // On redirige l'utilisateur vers une vidéo "en attente".
+            console.log(`[PHASE 2] Lien de streaming non disponible (téléchargement en cours sur le service debrid). Redirection vers la vidéo d'attente.`);
+            return res.redirect(302, introVideoUrl);
         }
+
     } catch (error) {
-        console.error(`[PLAYBACK] Error processing request: ${error.message}`);
+        console.error(`[PHASE 2] Erreur lors du traitement de la requête de lecture: ${error.message}`);
         return res.status(500).send('Internal server error');
     }
 });
