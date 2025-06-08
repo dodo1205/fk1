@@ -13,6 +13,7 @@ const { serveHTTP } = require('stremio-addon-sdk');
 const http = require('http');
 const { networkInterfaces } = require('os');
 const crypto = require('crypto');
+const { encodeBase64UrlSafe, decodeBase64UrlSafe } = require('./lib/stringUtils');
 
 // Création de l'application Express
 const app = express();
@@ -35,23 +36,6 @@ const activeConfigs = {};
 // Fonction pour générer un ID unique
 function generateUniqueId() {
     return crypto.randomBytes(4).toString('hex');
-}
-
-// --- Encoding/Decoding Functions ---
-function encodeBase64UrlSafe(str) {
-    return Buffer.from(str).toString('base64')
-        .replace(/\+/g, '-') // Convert '+' to '-'
-        .replace(/\//g, '_') // Convert '/' to '_'
-        .replace(/=+$/, ''); // Remove ending '='
-}
-
-function decodeBase64UrlSafe(str) {
-    str = str.replace(/-/g, '+').replace(/_/g, '/');
-    // Pad with '=' characters if necessary
-    while (str.length % 4) {
-        str += '=';
-    }
-    return Buffer.from(str, 'base64').toString('utf-8');
 }
 
 function encodeConfig(config) {
@@ -78,8 +62,6 @@ function decodeQuery(encodedQuery) {
         return null;
     }
 }
-// --- End Encoding/Decoding ---
-
 
 // Importation du module addon
 const { createAddonInterface } = require('./lib/addon');
@@ -138,19 +120,16 @@ app.get('/c/:uniqueId/manifest.json', (req, res) => {
         }
         console.log('Utilisation de la configuration:', config);
         
-        // Add baseUrl to config before creating interface
         config.baseUrl = `https://${req.get('host')}/c/${uniqueId}`; 
         
         const addonInterface = createAddonInterface(config);
         
         if (addonInterface && addonInterface.manifest) {
             const fullUrlManifest = { ...addonInterface.manifest };
-            // Ensure absolute URLs are correctly set (using baseUrl from config now)
             fullUrlManifest.resources = [
                 { name: "catalog", types: ["fankai"], idPrefixes: ["fankai:"], endpoint: `${config.baseUrl}/catalog/{type}/{id}.json` },
                 { name: "meta", types: ["fankai"], idPrefixes: ["fankai:"], endpoint: `${config.baseUrl}/meta/{type}/{id}.json` },
                 { name: "stream", types: ["fankai"], idPrefixes: ["fankai:"], endpoint: `${config.baseUrl}/stream/{type}/{id}.json` }
-                // Playback endpoint is not part of standard manifest resources
             ];
             console.log('Manifest envoyé avec URLs absolues');
             res.setHeader('Content-Type', 'application/json');
@@ -195,7 +174,6 @@ app.get('/c/:uniqueId/catalog/:type/:id.json', (req, res) => {
             console.error('Configuration non trouvée pour ID catalog:', uniqueId);
             return res.status(404).json({ error: 'Configuration non trouvée' });
         }
-        // Add baseUrl to config before creating interface
         config.baseUrl = `https://${req.get('host')}/c/${uniqueId}`; 
         const addonInterface = createAddonInterface(config);
         if (!addonInterface.get) {
@@ -224,7 +202,6 @@ app.get('/c/:uniqueId/meta/:type/:id.json', (req, res) => {
             console.error('Configuration non trouvée pour ID meta:', uniqueId);
             return res.status(404).json({ error: 'Configuration non trouvée' });
         }
-        // Add baseUrl to config before creating interface
         config.baseUrl = `https://${req.get('host')}/c/${uniqueId}`; 
         const addonInterface = createAddonInterface(config);
         if (!addonInterface.get) {
@@ -255,7 +232,6 @@ app.get('/c/:uniqueId/stream/:type/:id.json', (req, res) => {
             console.error('Configuration non trouvée pour ID stream:', uniqueId);
             return res.status(404).json({ error: 'Configuration non trouvée' });
         }
-        // Add baseUrl to config before creating interface
         config.baseUrl = `https://${req.get('host')}/c/${uniqueId}`; 
         const addonInterface = createAddonInterface(config);
         if (!addonInterface.get) {
@@ -307,7 +283,6 @@ app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
                  console.error('[PLAYBACK - DOWNLOAD] Debrid service not configured');
                  return res.redirect(302, introVideoUrl);
             }
-            // Pass episodeNumber and episodeName to initiateDebridDownload
             initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
                 .then(() => console.log(`[PLAYBACK - DOWNLOAD] Background download initiated for ${magnetLink.substring(0, 50)}...`))
                 .catch(err => console.error(`[PLAYBACK - DOWNLOAD] Background download initiation failed: ${err.message}`));
@@ -317,6 +292,30 @@ app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
         } else if (action === 'play') {
             console.log(`[PLAYBACK - PLAY] Resolving stream link for: ${magnetLink.substring(0, 50)}...`);
             if (config.service === 'none' || !config.apiKey) {
+                 console.error('[PLAYBACK - PLAY] Debrid service not configured for playback');
+                 return res.status(400).send('Debrid service not configured for playback');
+            }
+            const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
+            if (debridResult && debridResult.streamUrl) {
+                console.log(`[PLAYBACK - PLAY] Redirecting to resolved stream: ${debridResult.streamUrl}`);
+                return res.redirect(302, debridResult.streamUrl);
+            } else {
+                console.log(`[PLAYBACK - PLAY] Stream not ready or found. Initiating download and redirecting to intro video.`);
+                 initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
+                    .then(() => console.log(`[PLAYBACK - PLAY] Background download initiated (stream not ready) for ${magnetLink.substring(0, 50)}...`))
+                    .catch(err => console.error(`[PLAYBACK - PLAY] Background download initiation failed (stream not ready): ${err.message}`));
+                return res.redirect(302, introVideoUrl);
+            }
+        } else {
+            console.error(`[PLAYBACK] Invalid action: ${action}`);
+            return res.status(400).send('Invalid action parameter');
+        }
+    } catch (error) {
+        console.error(`[PLAYBACK] Error processing request: ${error.message}`);
+        return res.status(500).send('Internal server error');
+    }
+});
+
 // HEAD handler for playback URL - Check status without redirecting
 app.head('/c/:uniqueId/playback/:queryb64', async (req, res) => {
     const { uniqueId, queryb64 } = req.params;
@@ -335,9 +334,8 @@ app.head('/c/:uniqueId/playback/:queryb64', async (req, res) => {
         return res.status(400).end();
     }
 
-    const { action, episode: episodeNumber, episodeName } = queryData; // Also decode episode info for HEAD if needed
+    const { action, episode: episodeNumber, episodeName } = queryData;
 
-    // Basic headers indicating potential video content
     const headers = {
         'Content-Type': 'video/mp4',
         'Accept-Ranges': 'bytes',
@@ -367,31 +365,6 @@ app.head('/c/:uniqueId/playback/:queryb64', async (req, res) => {
     } catch (error) {
         console.error(`[PLAYBACK HEAD] Error processing request: ${error.message}`);
         return res.status(500).end();
-    }
-});
-                 console.error('[PLAYBACK - PLAY] Debrid service not configured for playback');
-                 return res.status(400).send('Debrid service not configured for playback');
-            }
-            // Pass episodeNumber and episodeName to debridTorrent
-            const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
-            if (debridResult && debridResult.streamUrl) {
-                console.log(`[PLAYBACK - PLAY] Redirecting to resolved stream: ${debridResult.streamUrl}`);
-                return res.redirect(302, debridResult.streamUrl);
-            } else {
-                console.log(`[PLAYBACK - PLAY] Stream not ready or found. Initiating download and redirecting to intro video.`);
-                 // Pass episodeNumber and episodeName to initiateDebridDownload
-                 initiateDebridDownload(magnetLink, config, episodeNumber, episodeName)
-                    .then(() => console.log(`[PLAYBACK - PLAY] Background download initiated (stream not ready) for ${magnetLink.substring(0, 50)}...`))
-                    .catch(err => console.error(`[PLAYBACK - PLAY] Background download initiation failed (stream not ready): ${err.message}`));
-                return res.redirect(302, introVideoUrl);
-            }
-        } else {
-            console.error(`[PLAYBACK] Invalid action: ${action}`);
-            return res.status(400).send('Invalid action parameter');
-        }
-    } catch (error) {
-        console.error(`[PLAYBACK] Error processing request: ${error.message}`);
-        return res.status(500).send('Internal server error');
     }
 });
 
