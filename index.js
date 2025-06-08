@@ -269,8 +269,9 @@ app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
 
     const { magnet: magnetLink, episode: episodeNumber, episodeName } = queryData;
     const action = queryData.action || 'play'; // 'play' ou 'download'
+    const isCached = req.query.cached === 'true'; // Lire le nouveau paramètre
 
-    console.log(`[PHASE 2] Action: ${action}, Magnet: ${magnetLink.substring(0, 50)}..., Ep: ${episodeNumber}`);
+    console.log(`[PHASE 2] Action: ${action}, Magnet: ${magnetLink.substring(0, 50)}..., Ep: ${episodeNumber}, IsCached (Torbox): ${isCached}`);
 
     if (config.service === 'none' || !config.apiKey) {
         console.error('[PHASE 2] Service de débridage non configuré.');
@@ -286,7 +287,8 @@ app.get('/c/:uniqueId/playback/:queryb64', async (req, res) => {
         // Que l'action soit 'play' (pour un lien cache) ou 'download' (pour un lien non-cache),
         // le processus backend est le même : on lance le débridage.
         console.log(`[PHASE 2] Lancement du processus de débridage pour ${config.service}...`);
-        const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName);
+        // On passe le statut du cache à debridTorrent
+        const debridResult = await debridTorrent(magnetLink, config, episodeNumber, episodeName, { isCached });
 
         if (debridResult && debridResult.streamUrl) {
             // Succès : le fichier était en cache ou a été téléchargé rapidement.
